@@ -1,0 +1,41 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://billuser:billpass@db:5432/billreminder
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bill-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=billuser
+      - POSTGRES_PASSWORD=billpass
+      - POSTGRES_DB=billreminder
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U billuser -d billreminder"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - bill-network
+
+networks:
+  bill-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
